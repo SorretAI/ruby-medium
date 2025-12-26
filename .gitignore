@@ -1,0 +1,180 @@
+# =========================
+# OS / Editor / IDE
+# =========================
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.netrwhist
+.Session.vim
+.Session.vim.*
+
+# =========================
+# Node / TypeScript
+# =========================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.pnpm-store/
+
+dist/
+build/
+out/
+coverage/
+.nyc_output/
+*.tsbuildinfo
+
+# Env files (never commit secrets)
+.env
+.env.*
+!.env.example
+
+# =========================
+# Logs / Runtime
+# =========================
+logs/
+*.log
+*.pid
+*.pid.lock
+
+# =========================
+# Docker
+# =========================
+**/.docker/
+docker-data/
+docker-volumes/
+*.tar
+
+# =========================
+# Workspace persistence
+# =========================
+/workspace/
+workspace/
+workspace-data/
+data/
+
+# =========================
+# Postgres / pgvector
+# =========================
+postgres-data/
+pg-data/
+db-data/
+*.sqlite
+*.sqlite3
+
+# =========================
+# ComfyUI / Models / Outputs
+# =========================
+ComfyUI/models/
+ComfyUI/output/
+ComfyUI/input/
+ComfyUI/temp/
+ComfyUI/user/
+ComfyUI/custom_nodes/**/__pycache__/
+ComfyUI/custom_nodes/**/.pytest_cache/
+ComfyUI/custom_nodes/**/.mypy_cache/
+
+*.ckpt
+*.safetensors
+*.pt
+*.pth
+*.bin
+*.onnx
+*.engine
+*.tflite
+*.gguf
+
+# =========================
+# Artifacts & Generated Media
+# =========================
+artifacts/
+outputs/
+generated/
+renders/
+exports/
+*.png
+*.jpg
+*.jpeg
+*.webp
+*.gif
+*.mp4
+*.mov
+*.mkv
+*.avi
+*.wav
+*.mp3
+*.m4a
+
+# =========================
+# Uploads / Research Sources
+# =========================
+uploads/
+ingest/
+research_cache/
+*.pdf
+*.docx
+*.pptx
+*.xlsx
+
+# =========================
+# Playwright / Browser automation
+# =========================
+playwright-report/
+test-results/
+blob-report/
+.trace/
+*.trace
+*.har
+
+.browser/
+browser-data/
+chrome-data/
+chromium-data/
+user-data-dir/
+
+# =========================
+# Telemetry
+# =========================
+otel-data/
+prometheus-data/
+grafana-data/
+*.pb
+*.parquet
+
+# =========================
+# Python
+# =========================
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+venv/
+.envrc
+
+# =========================
+# Security
+# =========================
+*.key
+*.pem
+*.crt
+*.p12
+secrets/
+credentials/
+tokens/
+*.secret
+
+# =========================
+# Misc
+# =========================
+tmp/
+temp/
+.cache/

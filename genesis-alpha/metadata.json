@@ -1,0 +1,5 @@
+{
+  "name": "Genesis Content Engine (RUBY)",
+  "description": "A dashboard and simulation of the Genesis Multi-Agent System architecture, capable of simulating agent orchestration, CFO auditing, and visual engineering workflows.",
+  "requestFramePermissions": []
+}

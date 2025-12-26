@@ -1,0 +1,68 @@
+version: '3.8'
+
+services:
+  # 1. The Brain (Orchestrator + Agents)
+  orchestrator:
+    build: .
+    restart: always
+    environment:
+      - DATABASE_URL=postgres://user:password@postgres:5432/genesis
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
+    volumes:
+      - ./logs:/app/logs
+      - ./artifacts:/app/artifacts
+    depends_on:
+      - postgres
+      - mcp-server
+
+  # 2. The Jewel (Memory)
+  postgres:
+    image: pgvector/pgvector:pg16
+    restart: always
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: genesis
+    volumes:
+      - ./postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  # 3. Model Context Protocol Server (Tools)
+  mcp-server:
+    build:
+      context: .
+      dockerfile: Dockerfile.mcp
+    environment:
+      - DATABASE_URL=postgres://user:password@postgres:5432/genesis
+    depends_on:
+      - postgres
+
+  # 4. Visual Engineer (Image Gen)
+  comfyui:
+    image: runpod/comfyui:latest # Placeholder for actual GPU optimized image
+    runtime: nvidia
+    environment:
+      - CLI_ARGS=--listen --port 8188
+    volumes:
+      - ./comfy_models:/comfyui/models
+      - ./comfy_output:/comfyui/output
+    ports:
+      - "8188:8188"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
+  # 5. The Scout (Browser Automation)
+  browserless:
+    image: browserless/chrome:latest
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      - MAX_CONCURRENT_SESSIONS=5

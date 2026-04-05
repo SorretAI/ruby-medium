@@ -1,0 +1,182 @@
+version: '3.8'
+
+services:
+  # ============================================================================
+  # PYTHON MONITORING SERVICE
+  # ============================================================================
+  monitor-service:
+    build:
+      context: ./trending-engine
+      dockerfile: Dockerfile
+    container_name: news-monitor
+    restart: always
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - DATABASE_URL=postgres://user:password@postgres:5432/newsdb
+      - PLAYWRIGHT_BROWSERS_PATH=/workspace/browser-data
+
+      # API Keys
+      - GOOGLE_TRENDS_API_KEY=${GOOGLE_TRENDS_API_KEY:-}
+      - NEWSAPI_KEY=${NEWSAPI_KEY:-}
+      - GDELT_API_KEY=${GDELT_API_KEY:-}
+
+      # Rate limiting
+      - TWITTER_DELAY_MS=60000
+      - REDDIT_DELAY_MS=30000
+
+    volumes:
+      - ./workspace:/workspace
+      - ./trending-engine:/app
+    depends_on:
+      - redis
+      - postgres
+    networks:
+      - news-network
+
+  # ============================================================================
+  # TYPESCRIPT CONTENT ENGINE
+  # ============================================================================
+  content-engine:
+    build:
+      context: ./content-engine
+      dockerfile: Dockerfile
+    container_name: content-engine
+    restart: always
+    environment:
+      - DATABASE_URL=postgres://user:password@postgres:5432/newsdb
+      - REDIS_URL=redis://redis:6379
+      - NODE_ENV=production
+
+      # AI Providers
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY:-}
+      - NVIDIA_API_KEY=${NVIDIA_API_KEY:-}
+      - OLLAMA_BASE_URL=${OLLAMA_BASE_URL:-http://ollama:11434}
+
+      # Discord Bot
+      - DISCORD_BOT_TOKEN=${DISCORD_BOT_TOKEN:-}
+      - DISCORD_APP_ID=${DISCORD_APP_ID:-}
+      - DISCORD_CHANNEL_ID=${DISCORD_CHANNEL_ID:-}
+
+      # Medium API
+      - MEDIUM_API_KEY=${MEDIUM_API_KEY:-}
+
+      # Monitoring
+      - SENTRY_DSN=${SENTRY_DSN:-}
+      - LOG_LEVEL=info
+
+    volumes:
+      - ./workspace:/workspace
+      - ./content-engine:/app
+    depends_on:
+      - postgres
+      - redis
+      - monitor-service
+    networks:
+      - news-network
+
+  # ============================================================================
+  # POSTGRESQL + PGVECTOR
+  # ============================================================================
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: news-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: newsdb
+    volumes:
+      - ./postgres_data:/var/lib/postgresql/data
+      - ./shared/schema.sql:/docker-entrypoint-initdb.d/001-schema.sql
+      - ./shared/init.sql:/docker-entrypoint-initdb.d/002-init.sql
+    ports:
+      - "5432:5432"
+    networks:
+      - news-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d newsdb"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ============================================================================
+  # REDIS (Message Queue)
+  # ============================================================================
+  redis:
+    image: redis:alpine
+    container_name: news-redis
+    restart: always
+    command: redis-server --appendonly yes
+    volumes:
+      - ./redis_data:/data
+    ports:
+      - "6379:6379"
+    networks:
+      - news-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+
+  # ============================================================================
+  # DISCORD BOT (separate for scalability)
+  # ============================================================================
+  discord-bot:
+    build:
+      context: ./content-engine
+      dockerfile: Dockerfile
+    container_name: discord-bot
+    command: ["node", "dist/discord-bot.js"]
+    environment:
+      - DATABASE_URL=postgres://user:password@postgres:5432/newsdb
+      - DISCORD_BOT_TOKEN=${DISCORD_BOT_TOKEN:-}
+      - DISCORD_APP_ID=${DISCORD_APP_ID:-}
+      - DISCORD_CHANNEL_ID=${DISCORD_CHANNEL_ID:-}
+    depends_on:
+      - postgres
+    networks:
+      - news-network
+
+  # ============================================================================
+  # OPTIONAL: NVIDIA NIM LOCAL (if self-hosting models)
+  # ============================================================================
+  # nims-server:
+  #   image: nvcr.io/nim/meta/llama-3-8b-instruct:latest
+  #   container_name: nims-server
+  #   runtime: nvidia
+  #   environment:
+  #     - NGC_API_KEY=${NVIDIA_API_KEY:-}
+  #   ports:
+  #     - "8000:8000"
+  #   deploy:
+  #     resources:
+  #       reservations:
+  #         devices:
+  #           - driver: nvidia
+  #             count: 1
+  #             capabilities: [gpu]
+  #   profiles:
+  #     - gpu
+
+  # ============================================================================
+  # OPTIONAL: OLLAMA (local models)
+  # ============================================================================
+  # ollama:
+  #   image: ollama/ollama:latest
+  #   container_name: ollama
+  #   volumes:
+  #     - ./ollama_data:/root/.ollama
+  #   ports:
+  #     - "11434:11434"
+  #   profiles:
+  #     - ollama
+
+networks:
+  news-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  redis_data:
+  workspace:
